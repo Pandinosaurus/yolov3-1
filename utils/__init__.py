@@ -1,18 +1,42 @@
-# YOLOv3 🚀 by Ultralytics, GPL-3.0 license
-"""
-utils/initialization
-"""
+# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+"""utils/initialization."""
+
+import contextlib
+
+from ultralytics.utils import LOGGER, TryExcept, emojis, threaded  # noqa: F401
 
 
-def notebook_init():
-    # For  notebooks
-    print('Checking setup...')
-    from IPython import display  # to display images and clear console output
+def notebook_init(verbose=True):
+    """Initializes notebook environment by checking hardware, software requirements, and cleaning up if in Colab."""
+    LOGGER.info("Checking setup...")
 
-    from utils.general import emojis
+    import os
+    import shutil
+
+    from utils.general import check_font, is_colab
     from utils.torch_utils import select_device  # imports
 
-    display.clear_output()
+    check_font()
+
+    import psutil
+
+    if is_colab():
+        shutil.rmtree("/content/sample_data", ignore_errors=True)  # remove colab /sample_data directory
+
+    # System info
+    display = None
+    if verbose:
+        gb = 1 << 30  # bytes to GiB (1024 ** 3)
+        ram = psutil.virtual_memory().total
+        total, _used, free = shutil.disk_usage("/")
+        with contextlib.suppress(Exception):  # clear display if ipython is installed
+            from IPython import display
+
+            display.clear_output()
+        s = f"({os.cpu_count()} CPUs, {ram / gb:.1f} GB RAM, {(total - free) / gb:.1f}/{total / gb:.1f} GB disk)"
+    else:
+        s = ""
+
     select_device(newline=False)
-    print(emojis('Setup complete ✅'))
+    LOGGER.info(f"Setup complete ✅ {s}")
     return display
